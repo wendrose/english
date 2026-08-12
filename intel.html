@@ -50,7 +50,959 @@
 <body>
 
   <!-- 密码输入区域，初始显示 -->
-  <div id="https://wendrose.github.io/shuadanci">
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌟 单词大冒险 · 闯关模式</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb, #84fab0, #8fd3f4);
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .floating-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .floating-bg span { position: absolute; font-size: 30px; opacity: 0.6; animation: floatUp 6s ease-in infinite; }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        .card {
+            position: relative;
+            z-index: 10;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(15px);
+            border-radius: 35px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            padding: 25px 30px 25px;
+            width: 92%;
+            max-width: 600px;
+            border: 4px solid rgba(255,255,255,0.65);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -8px; left: -8px; right: -8px; bottom: -8px;
+            border-radius: 40px;
+            border: 4px solid transparent;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff6b6b) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: -1;
+            animation: borderSpin 4s linear infinite;
+        }
+        @keyframes borderSpin { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+        .mascot { position: absolute; top: -60px; left: -25px; font-size: 75px; transform: rotate(-15deg); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); z-index: 15; }
+
+        .title {
+            font-size: 36px; font-weight: 900; color: #333;
+            text-shadow: 2px 2px 0 #fff, 0 0 10px rgba(255,177,66,0.8);
+            letter-spacing: 2px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0 5px;
+            padding: 8px 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .top-bar .level { color: #8e44ad; }
+        .top-bar .points { color: #e67e22; }
+        .top-bar .combo { color: #e74c3c; }
+
+        .combo-flash { animation: comboPop 0.3s ease; }
+        @keyframes comboPop { 0% { transform: scale(1); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+
+        .progress-info {
+            display: flex; align-items: center; gap: 12px;
+            margin: 8px 0;
+        }
+        .stage-progress { flex: 1; height: 14px; background: #eee; border-radius: 20px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .stage-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd700, #ffaa00); border-radius: 20px; transition: width 0.4s ease; box-shadow: 0 0 10px rgba(255,215,0,0.8); }
+        .stage-num { font-size: 14px; font-weight: 800; color: #555; min-width: 60px; }
+
+        .mode-label {
+            font-size: 15px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-top: 8px;
+        }
+
+        /* 题目区域：包含单词和发音按钮 */
+        .question-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 25px;
+            border: 3px dashed #f7971e;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .question {
+            font-size: 44px;
+            font-weight: 900;
+            color: #2c3e50;
+            word-break: break-word;
+            min-height: 60px;
+            flex: 1;
+            line-height: 1.2;
+        }
+
+        .speak-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            font-size: 22px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.5);
+            transition: all 0.2s;
+        }
+        .speak-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(102,126,234,0.6); }
+        .speak-btn:active { transform: scale(0.95); }
+
+        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 12px 0; }
+        .option-btn {
+            border: none; font-size: 18px; font-weight: 800;
+            padding: 13px 8px; border-radius: 16px; cursor: pointer;
+            color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2), 0 8px 15px rgba(0,0,0,0.1);
+            transition: all 0.15s ease;
+            letter-spacing: 0.5px; word-break: break-word;
+        }
+        .option-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 rgba(0,0,0,0.2); }
+        .option-btn:hover { transform: scale(1.04); filter: brightness(1.1); }
+        .option-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: 0 6px 0 rgba(0,0,0,0.1); }
+
+        .color0 { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+        .color1 { background: linear-gradient(135deg, #4ecdc4, #44bd9e); }
+        .color2 { background: linear-gradient(135deg, #f6d365, #fda085); }
+        .color3 { background: linear-gradient(135deg, #a29bfe, #6c5ce7); }
+
+        .correct-animation { animation: correctPop 0.5s ease; }
+        .wrong-animation { animation: wrongShake 0.5s ease; }
+        @keyframes correctPop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        .status { font-size: 17px; font-weight: 700; min-height: 28px; margin: 8px 0; }
+
+        .badges {
+            display: flex; justify-content: center; gap: 8px;
+            margin: 5px 0 10px;
+            flex-wrap: wrap;
+            min-height: 36px;
+        }
+        .badge {
+            font-size: 24px;
+            background: #f0f0f0;
+            border-radius: 50%;
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            filter: grayscale(100%);
+            opacity: 0.4;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .badge.unlocked {
+            filter: none;
+            opacity: 1;
+            background: linear-gradient(135deg, #ffd700, #ffaa00);
+            box-shadow: 0 3px 10px rgba(255,215,0,0.5);
+        }
+        .badge::after {
+            content: attr(data-title);
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .badge:hover::after { opacity: 1; }
+
+        .restart-btn {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: white; border: none;
+            font-size: 15px; font-weight: 800;
+            padding: 11px 28px;
+            border-radius: 30px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(243,156,18,0.5);
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .restart-btn:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(243,156,18,0.6); }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55);
+            display: none;
+            justify-content: center; align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        .overlay.show { display: flex; }
+
+        .stage-complete {
+            background: white;
+            border-radius: 30px;
+            padding: 30px 40px;
+            text-align: center;
+            animation: bounceIn 0.6s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            max-width: 420px;
+            width: 85%;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.95); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .stage-complete h2 {
+            font-size: 30px;
+            background: linear-gradient(90deg, #f7971e, #e74c3c, #8e44ad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .stars {
+            font-size: 48px;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .stars span { opacity: 0.2; transform: scale(0.8); transition: all 0.3s; }
+        .stars span.gained {
+            opacity: 1;
+            transform: scale(1);
+            animation: starPop 0.5s ease;
+            animation-fill-mode: both;
+        }
+        .stars span:nth-child(1).gained { animation-delay: 0.2s; }
+        .stars span:nth-child(2).gained { animation-delay: 0.5s; }
+        .stars span:nth-child(3).gained { animation-delay: 0.8s; }
+        @keyframes starPop {
+            0% { transform: scale(0) rotate(-30deg); opacity: 0; }
+            60% { transform: scale(1.3) rotate(10deg); }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+
+        .stage-stats {
+            font-size: 16px;
+            color: #555;
+            margin: 10px 0;
+            line-height: 1.8;
+        }
+        .bonus-text {
+            color: #e67e22;
+            font-weight: 900;
+            animation: bonusFlash 0.8s ease infinite;
+        }
+        @keyframes bonusFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .next-btn {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: white; border: none;
+            font-size: 18px; font-weight: 800;
+            padding: 14px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(108,92,231,0.5);
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        .next-btn:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(108,92,231,0.6); }
+
+        .confetti-piece {
+            position: fixed;
+            width: 12px; height: 12px;
+            top: -20px;
+            border-radius: 3px;
+            z-index: 200;
+            animation: confettiFall 3s linear forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .card { padding: 18px 12px; }
+            .question { font-size: 30px; }
+            .speak-btn { width: 40px; height: 40px; font-size: 18px; }
+            .option-btn { font-size: 14px; padding: 11px 4px; }
+            .mascot { font-size: 50px; top: -45px; left: -10px; }
+            .title { font-size: 28px; }
+            .top-bar { font-size: 13px; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-bg" id="floatBg"></div>
+
+    <div class="overlay" id="stageOverlay">
+        <div class="stage-complete">
+            <div style="font-size:60px;">🎉</div>
+            <h2>关卡完成！</h2>
+            <div class="stars" id="starsRow"></div>
+            <div class="stage-stats" id="stageStats"></div>
+            <button class="next-btn" id="nextStageBtn">下一关 ➡️</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="mascot">🦁</div>
+
+        <h1 class="title">🌈 闯关大冒险</h1>
+
+        <div class="top-bar">
+            <span class="level" id="levelText">🛡️ 第 1 关</span>
+            <span class="points" id="pointsText">💰 0 分</span>
+            <span class="combo" id="comboText">🔥 x0</span>
+        </div>
+
+        <div class="progress-info">
+            <span class="stage-num" id="stageNumText">0 / 10</span>
+            <div class="stage-progress">
+                <div class="stage-fill" id="stageFill"></div>
+            </div>
+        </div>
+
+        <div class="mode-label" id="modeLabel">请选出单词的正确中文意思</div>
+        <div class="question-wrapper">
+            <div class="question" id="question">apple</div>
+            <button class="speak-btn" id="speakBtn">🔊</button>
+        </div>
+        <div class="options" id="options"></div>
+
+        <div class="status" id="status">加油！选一个答案吧</div>
+
+        <div class="badges" id="badgesArea"></div>
+
+        <button class="restart-btn" id="restartBtn">🔄 重启冒险</button>
+    </div>
+
+    <script>
+        // ===== 单词库（360+）=====
+        const WORDS = [
+            // 动物
+            { "en": "cat", "cn": "猫" }, { "en": "dog", "cn": "狗" }, { "en": "bird", "cn": "鸟" },
+            { "en": "fish", "cn": "鱼" }, { "en": "rabbit", "cn": "兔子" }, { "en": "horse", "cn": "马" },
+            { "en": "cow", "cn": "奶牛" }, { "en": "pig", "cn": "猪" }, { "en": "sheep", "cn": "绵羊" },
+            { "en": "duck", "cn": "鸭子" }, { "en": "chicken", "cn": "鸡" }, { "en": "elephant", "cn": "大象" },
+            { "en": "monkey", "cn": "猴子" }, { "en": "tiger", "cn": "老虎" }, { "en": "lion", "cn": "狮子" },
+            { "en": "bear", "cn": "熊" }, { "en": "panda", "cn": "熊猫" }, { "en": "fox", "cn": "狐狸" },
+            { "en": "wolf", "cn": "狼" }, { "en": "mouse", "cn": "老鼠" }, { "en": "frog", "cn": "青蛙" },
+            { "en": "bee", "cn": "蜜蜂" }, { "en": "ant", "cn": "蚂蚁" }, { "en": "snake", "cn": "蛇" },
+            { "en": "turtle", "cn": "乌龟" }, { "en": "giraffe", "cn": "长颈鹿" }, { "en": "kangaroo", "cn": "袋鼠" },
+            { "en": "zebra", "cn": "斑马" },
+
+            // 水果 & 食物
+            { "en": "apple", "cn": "苹果" }, { "en": "banana", "cn": "香蕉" }, { "en": "orange", "cn": "橙子" },
+            { "en": "pear", "cn": "梨" }, { "en": "grape", "cn": "葡萄" }, { "en": "watermelon", "cn": "西瓜" },
+            { "en": "strawberry", "cn": "草莓" }, { "en": "peach", "cn": "桃子" }, { "en": "lemon", "cn": "柠檬" },
+            { "en": "mango", "cn": "芒果" }, { "en": "pineapple", "cn": "菠萝" }, { "en": "cherry", "cn": "樱桃" },
+            { "en": "rice", "cn": "米饭" }, { "en": "bread", "cn": "面包" }, { "en": "cake", "cn": "蛋糕" },
+            { "en": "egg", "cn": "鸡蛋" }, { "en": "milk", "cn": "牛奶" }, { "en": "water", "cn": "水" },
+            { "en": "juice", "cn": "果汁" }, { "en": "tea", "cn": "茶" }, { "en": "coffee", "cn": "咖啡" },
+            { "en": "hamburger", "cn": "汉堡包" }, { "en": "pizza", "cn": "披萨" }, { "en": "ice cream", "cn": "冰淇淋" },
+            { "en": "noodle", "cn": "面条" }, { "en": "dumpling", "cn": "饺子" }, { "en": "soup", "cn": "汤" },
+            { "en": "sandwich", "cn": "三明治" }, { "en": "salad", "cn": "沙拉" }, { "en": "chocolate", "cn": "巧克力" },
+            { "en": "cookie", "cn": "饼干" }, { "en": "candy", "cn": "糖果" }, { "en": "meat", "cn": "肉" },
+            { "en": "potato", "cn": "土豆" }, { "en": "tomato", "cn": "西红柿" }, { "en": "carrot", "cn": "胡萝卜" },
+            { "en": "cabbage", "cn": "卷心菜" }, { "en": "onion", "cn": "洋葱" }, { "en": "corn", "cn": "玉米" },
+            { "en": "mushroom", "cn": "蘑菇" },
+
+            // 颜色
+            { "en": "red", "cn": "红色" }, { "en": "blue", "cn": "蓝色" }, { "en": "green", "cn": "绿色" },
+            { "en": "yellow", "cn": "黄色" }, { "en": "black", "cn": "黑色" }, { "en": "white", "cn": "白色" },
+            { "en": "pink", "cn": "粉色" }, { "en": "purple", "cn": "紫色" }, { "en": "brown", "cn": "棕色" },
+            { "en": "gray", "cn": "灰色" }, { "en": "gold", "cn": "金色" }, { "en": "silver", "cn": "银色" },
+
+            // 数字
+            { "en": "one", "cn": "一" }, { "en": "two", "cn": "二" }, { "en": "three", "cn": "三" },
+            { "en": "four", "cn": "四" }, { "en": "five", "cn": "五" }, { "en": "six", "cn": "六" },
+            { "en": "seven", "cn": "七" }, { "en": "eight", "cn": "八" }, { "en": "nine", "cn": "九" },
+            { "en": "ten", "cn": "十" }, { "en": "eleven", "cn": "十一" }, { "en": "twelve", "cn": "十二" },
+            { "en": "thirteen", "cn": "十三" }, { "en": "fourteen", "cn": "十四" }, { "en": "fifteen", "cn": "十五" },
+            { "en": "sixteen", "cn": "十六" }, { "en": "seventeen", "cn": "十七" }, { "en": "eighteen", "cn": "十八" },
+            { "en": "nineteen", "cn": "十九" }, { "en": "twenty", "cn": "二十" }, { "en": "thirty", "cn": "三十" },
+            { "en": "forty", "cn": "四十" }, { "en": "fifty", "cn": "五十" }, { "en": "hundred", "cn": "百" },
+
+            // 家庭
+            { "en": "mother", "cn": "妈妈" }, { "en": "father", "cn": "爸爸" }, { "en": "sister", "cn": "姐妹" },
+            { "en": "brother", "cn": "兄弟" }, { "en": "grandpa", "cn": "爷爷" }, { "en": "grandma", "cn": "奶奶" },
+            { "en": "aunt", "cn": "阿姨" }, { "en": "uncle", "cn": "叔叔" }, { "en": "cousin", "cn": "表兄弟姐妹" },
+            { "en": "son", "cn": "儿子" }, { "en": "daughter", "cn": "女儿" }, { "en": "baby", "cn": "婴儿" },
+            { "en": "family", "cn": "家庭" }, { "en": "parents", "cn": "父母" },
+
+            // 身体
+            { "en": "head", "cn": "头" }, { "en": "hair", "cn": "头发" }, { "en": "face", "cn": "脸" },
+            { "en": "eye", "cn": "眼睛" }, { "en": "ear", "cn": "耳朵" }, { "en": "nose", "cn": "鼻子" },
+            { "en": "mouth", "cn": "嘴巴" }, { "en": "tooth", "cn": "牙齿" }, { "en": "tongue", "cn": "舌头" },
+            { "en": "neck", "cn": "脖子" }, { "en": "shoulder", "cn": "肩膀" }, { "en": "arm", "cn": "手臂" },
+            { "en": "hand", "cn": "手" }, { "en": "finger", "cn": "手指" }, { "en": "leg", "cn": "腿" },
+            { "en": "foot", "cn": "脚" }, { "en": "knee", "cn": "膝盖" }, { "en": "toe", "cn": "脚趾" },
+            { "en": "body", "cn": "身体" }, { "en": "heart", "cn": "心脏" },
+
+            // 学校
+            { "en": "school", "cn": "学校" }, { "en": "teacher", "cn": "老师" }, { "en": "student", "cn": "学生" },
+            { "en": "classroom", "cn": "教室" }, { "en": "book", "cn": "书" }, { "en": "pen", "cn": "钢笔" },
+            { "en": "pencil", "cn": "铅笔" }, { "en": "ruler", "cn": "尺子" }, { "en": "eraser", "cn": "橡皮" },
+            { "en": "bag", "cn": "书包" }, { "en": "desk", "cn": "课桌" }, { "en": "chair", "cn": "椅子" },
+            { "en": "blackboard", "cn": "黑板" }, { "en": "computer", "cn": "电脑" }, { "en": "homework", "cn": "家庭作业" },
+            { "en": "lesson", "cn": "课" }, { "en": "class", "cn": "班级" }, { "en": "English", "cn": "英语" },
+            { "en": "math", "cn": "数学" }, { "en": "music", "cn": "音乐" }, { "en": "art", "cn": "美术" },
+            { "en": "library", "cn": "图书馆" }, { "en": "playground", "cn": "操场" },
+
+            // 日常用品
+            { "en": "cup", "cn": "杯子" }, { "en": "bowl", "cn": "碗" }, { "en": "plate", "cn": "盘子" },
+            { "en": "spoon", "cn": "勺子" }, { "en": "fork", "cn": "叉子" }, { "en": "knife", "cn": "刀" },
+            { "en": "glass", "cn": "玻璃杯" }, { "en": "phone", "cn": "电话" }, { "en": "television", "cn": "电视" },
+            { "en": "table", "cn": "桌子" }, { "en": "sofa", "cn": "沙发" }, { "en": "bed", "cn": "床" },
+            { "en": "lamp", "cn": "灯" }, { "en": "door", "cn": "门" }, { "en": "window", "cn": "窗户" },
+            { "en": "key", "cn": "钥匙" }, { "en": "umbrella", "cn": "雨伞" }, { "en": "watch", "cn": "手表" },
+            { "en": "mirror", "cn": "镜子" }, { "en": "towel", "cn": "毛巾" },
+
+            // 衣服
+            { "en": "shirt", "cn": "衬衫" }, { "en": "T-shirt", "cn": "T恤衫" }, { "en": "dress", "cn": "连衣裙" },
+            { "en": "skirt", "cn": "短裙" }, { "en": "coat", "cn": "外套" }, { "en": "jacket", "cn": "夹克" },
+            { "en": "sweater", "cn": "毛衣" }, { "en": "pants", "cn": "裤子" }, { "en": "shorts", "cn": "短裤" },
+            { "en": "shoes", "cn": "鞋子" }, { "en": "socks", "cn": "袜子" }, { "en": "hat", "cn": "帽子" },
+            { "en": "gloves", "cn": "手套" }, { "en": "scarf", "cn": "围巾" }, { "en": "belt", "cn": "腰带" },
+
+            // 动词
+            { "en": "run", "cn": "跑" }, { "en": "jump", "cn": "跳" }, { "en": "swim", "cn": "游泳" },
+            { "en": "fly", "cn": "飞" }, { "en": "walk", "cn": "走" }, { "en": "sing", "cn": "唱歌" },
+            { "en": "dance", "cn": "跳舞" }, { "en": "read", "cn": "读" }, { "en": "write", "cn": "写" },
+            { "en": "draw", "cn": "画画" }, { "en": "eat", "cn": "吃" }, { "en": "drink", "cn": "喝" },
+            { "en": "sleep", "cn": "睡觉" }, { "en": "sit", "cn": "坐" }, { "en": "stand", "cn": "站" },
+            { "en": "open", "cn": "打开" }, { "en": "close", "cn": "关闭" }, { "en": "go", "cn": "去" },
+            { "en": "come", "cn": "来" }, { "en": "play", "cn": "玩" }, { "en": "like", "cn": "喜欢" },
+            { "en": "love", "cn": "爱" }, { "en": "want", "cn": "想要" }, { "en": "have", "cn": "有" },
+            { "en": "see", "cn": "看见" }, { "en": "look", "cn": "看" }, { "en": "hear", "cn": "听见" },
+            { "en": "listen", "cn": "听" }, { "en": "wash", "cn": "洗" }, { "en": "help", "cn": "帮助" },
+            { "en": "give", "cn": "给" }, { "en": "take", "cn": "拿走" }, { "en": "buy", "cn": "买" },
+            { "en": "catch", "cn": "抓住" }, { "en": "laugh", "cn": "笑" }, { "en": "cry", "cn": "哭" },
+
+            // 形容词
+            { "en": "happy", "cn": "高兴的" }, { "en": "sad", "cn": "难过的" }, { "en": "big", "cn": "大的" },
+            { "en": "small", "cn": "小的" }, { "en": "tall", "cn": "高的" }, { "en": "short", "cn": "矮的" },
+            { "en": "long", "cn": "长的" }, { "en": "new", "cn": "新的" }, { "en": "old", "cn": "旧的" },
+            { "en": "fast", "cn": "快的" }, { "en": "slow", "cn": "慢的" }, { "en": "hot", "cn": "热的" },
+            { "en": "cold", "cn": "冷的" }, { "en": "warm", "cn": "温暖的" }, { "en": "cool", "cn": "凉爽的" },
+            { "en": "good", "cn": "好的" }, { "en": "bad", "cn": "坏的" }, { "en": "clean", "cn": "干净的" },
+            { "en": "dirty", "cn": "脏的" }, { "en": "beautiful", "cn": "美丽的" }, { "en": "strong", "cn": "强壮的" },
+            { "en": "weak", "cn": "虚弱的" }, { "en": "hungry", "cn": "饥饿的" }, { "en": "thirsty", "cn": "口渴的" },
+            { "en": "tired", "cn": "累的" }, { "en": "angry", "cn": "生气的" }, { "en": "nice", "cn": "友善的" },
+            { "en": "kind", "cn": "善良的" }, { "en": "rich", "cn": "富有的" }, { "en": "poor", "cn": "贫穷的" },
+
+            // 天气自然
+            { "en": "sun", "cn": "太阳" }, { "en": "moon", "cn": "月亮" }, { "en": "star", "cn": "星星" },
+            { "en": "rain", "cn": "雨" }, { "en": "snow", "cn": "雪" }, { "en": "wind", "cn": "风" },
+            { "en": "cloud", "cn": "云" }, { "en": "sky", "cn": "天空" }, { "en": "summer", "cn": "夏天" },
+            { "en": "spring", "cn": "春天" }, { "en": "autumn", "cn": "秋天" }, { "en": "winter", "cn": "冬天" },
+            { "en": "river", "cn": "河" }, { "en": "lake", "cn": "湖" }, { "en": "sea", "cn": "大海" },
+            { "en": "mountain", "cn": "大山" }, { "en": "tree", "cn": "树" }, { "en": "flower", "cn": "花" },
+            { "en": "grass", "cn": "草" }, { "en": "leaf", "cn": "树叶" },
+
+            // 时间
+            { "en": "morning", "cn": "早晨" }, { "en": "afternoon", "cn": "下午" }, { "en": "evening", "cn": "晚上" },
+            { "en": "night", "cn": "夜晚" }, { "en": "today", "cn": "今天" }, { "en": "tomorrow", "cn": "明天" },
+            { "en": "yesterday", "cn": "昨天" }, { "en": "Monday", "cn": "星期一" }, { "en": "Tuesday", "cn": "星期二" },
+            { "en": "Wednesday", "cn": "星期三" }, { "en": "Thursday", "cn": "星期四" }, { "en": "Friday", "cn": "星期五" },
+            { "en": "Saturday", "cn": "星期六" }, { "en": "Sunday", "cn": "星期天" }, { "en": "birthday", "cn": "生日" },
+            { "en": "year", "cn": "年" }, { "en": "month", "cn": "月" }, { "en": "week", "cn": "星期" },
+            { "en": "day", "cn": "天" },
+
+            // 人物其他
+            { "en": "friend", "cn": "朋友" }, { "en": "boy", "cn": "男孩" }, { "en": "girl", "cn": "女孩" },
+            { "en": "man", "cn": "男人" }, { "en": "woman", "cn": "女人" }, { "en": "people", "cn": "人们" },
+            { "en": "name", "cn": "名字" }, { "en": "hello", "cn": "你好" }, { "en": "thank", "cn": "谢谢" },
+            { "en": "sorry", "cn": "对不起" }, { "en": "yes", "cn": "是" }, { "en": "no", "cn": "不" },
+            { "en": "can", "cn": "能" }, { "en": "must", "cn": "必须" }, { "en": "and", "cn": "和" },
+            { "en": "but", "cn": "但是" }, { "en": "with", "cn": "和……一起" }, { "en": "in", "cn": "在……里面" },
+            { "en": "on", "cn": "在……上面" }, { "en": "under", "cn": "在……下面" }, { "en": "up", "cn": "向上" },
+            { "en": "down", "cn": "向下" }, { "en": "here", "cn": "这里" }, { "en": "there", "cn": "那里" },
+            { "en": "near", "cn": "附近" }, { "en": "left", "cn": "左边" }, { "en": "right", "cn": "右边" },
+            { "en": "home", "cn": "家" },
+
+            // 交通与职业
+            { "en": "car", "cn": "汽车" }, { "en": "bus", "cn": "公共汽车" }, { "en": "bike", "cn": "自行车" },
+            { "en": "taxi", "cn": "出租车" }, { "en": "train", "cn": "火车" }, { "en": "plane", "cn": "飞机" },
+            { "en": "ship", "cn": "轮船" }, { "en": "doctor", "cn": "医生" }, { "en": "nurse", "cn": "护士" },
+            { "en": "driver", "cn": "司机" }, { "en": "farmer", "cn": "农民" }, { "en": "worker", "cn": "工人" },
+            { "en": "cook", "cn": "厨师" }, { "en": "police", "cn": "警察" },
+
+            // 地点
+            { "en": "China", "cn": "中国" }, { "en": "city", "cn": "城市" }, { "en": "zoo", "cn": "动物园" },
+            { "en": "park", "cn": "公园" }, { "en": "hospital", "cn": "医院" }, { "en": "shop", "cn": "商店" },
+            { "en": "restaurant", "cn": "餐厅" },
+
+            // 其他
+            { "en": "animal", "cn": "动物" }, { "en": "fruit", "cn": "水果" }, { "en": "vegetable", "cn": "蔬菜" },
+            { "en": "football", "cn": "足球" }, { "en": "basketball", "cn": "篮球" }, { "en": "sports", "cn": "运动" },
+            { "en": "party", "cn": "聚会" }, { "en": "weather", "cn": "天气" }, { "en": "time", "cn": "时间" }
+        ];
+
+        // ===== 游戏配置 =====
+        const QUESTIONS_PER_STAGE = 10;
+        const BASE_POINTS = 10;
+        const COMBO_BONUS = 5;
+
+        // ===== 游戏状态 =====
+        let currentStage = 1;
+        let stageQuestionCount = 0;
+        let stageCorrectCount = 0;
+        let totalPoints = 0;
+        let comboCount = 0;
+        let maxCombo = 0;
+        let correctAnswer = null;
+        let mode = null;
+        let timer = null;
+        let questionLocked = false;
+
+        // 成就徽章定义
+        const BADGES = [
+            { id: 'first_blood', icon: '🔰', title: '第一滴血：答对第一题', condition: 'first_correct' },
+            { id: 'combo_5', icon: '🔥', title: '五连胜：连击达到 5', condition: 'combo5' },
+            { id: 'combo_10', icon: '⚡', title: '十连杀：连击达到 10', condition: 'combo10' },
+            { id: 'perfect', icon: '🏆', title: '完美过关：一关全对', condition: 'perfect' },
+            { id: 'stage_5', icon: '🚀', title: '小小高手：通过第 5 关', condition: 'stage5' },
+            { id: 'points_500', icon: '💰', title: '小富翁：积分达到 500', condition: 'points500' }
+        ];
+        let unlockedBadges = {};
+
+        // DOM 元素
+        const modeLabel = document.getElementById('modeLabel');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const statusEl = document.getElementById('status');
+        const levelText = document.getElementById('levelText');
+        const pointsText = document.getElementById('pointsText');
+        const comboText = document.getElementById('comboText');
+        const stageNumText = document.getElementById('stageNumText');
+        const stageFill = document.getElementById('stageFill');
+        const restartBtn = document.getElementById('restartBtn');
+        const nextStageBtn = document.getElementById('nextStageBtn');
+        const stageOverlay = document.getElementById('stageOverlay');
+        const starsRow = document.getElementById('starsRow');
+        const stageStats = document.getElementById('stageStats');
+        const badgesArea = document.getElementById('badgesArea');
+        const speakBtn = document.getElementById('speakBtn');
+
+        // ===== 发音功能 =====
+        function speak(text, lang) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel(); // 停止之前正在读的
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang;
+            utterance.rate = 0.9;  // 稍慢，适合小朋友
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function speakCurrentWord() {
+            if (mode === 'en2cn') {
+                speak(questionEl.textContent, 'en-US');
+            } else {
+                speak(questionEl.textContent, 'zh-CN');
+            }
+        }
+
+        function speakCorrectAnswer() {
+            // 找到当前单词对象
+            if (mode === 'en2cn') {
+                // 题目是英文，发音英文和中文
+                speak(currentWord.en, 'en-US');
+                setTimeout(() => speak(currentWord.cn, 'zh-CN'), 500);
+            } else {
+                speak(currentWord.cn, 'zh-CN');
+                setTimeout(() => speak(currentWord.en, 'en-US'), 500);
+            }
+        }
+
+        // 点击发音按钮
+        speakBtn.addEventListener('click', () => {
+            if (!questionLocked) {
+                speakCurrentWord();
+            }
+        });
+
+        // ===== 初始化徽章 =====
+        function initBadges() {
+            badgesArea.innerHTML = '';
+            BADGES.forEach(badge => {
+                const div = document.createElement('div');
+                div.className = 'badge';
+                div.id = 'badge_' + badge.id;
+                div.textContent = badge.icon;
+                div.dataset.title = badge.title;
+                badgesArea.appendChild(div);
+            });
+        }
+
+        function checkBadge(badgeId) {
+            if (unlockedBadges[badgeId]) return;
+            unlockedBadges[badgeId] = true;
+            const el = document.getElementById('badge_' + badgeId);
+            if (el) {
+                el.classList.add('unlocked');
+                showToast('🎖️ 解锁徽章：' + el.dataset.title);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.textContent = msg;
+            toast.style.cssText = `
+                position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                background: rgba(0,0,0,0.85); color: white; padding: 12px 24px;
+                border-radius: 30px; font-size: 16px; font-weight: 700; z-index: 300;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+                animation: bounceIn 0.5s ease;
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        // ===== 界面更新 =====
+        function updateUI() {
+            levelText.textContent = `🛡️ 第 ${currentStage} 关`;
+            pointsText.textContent = `💰 ${totalPoints} 分`;
+            comboText.textContent = `🔥 x${comboCount}`;
+            stageNumText.textContent = `${stageQuestionCount} / ${QUESTIONS_PER_STAGE}`;
+            stageFill.style.width = `${(stageQuestionCount / QUESTIONS_PER_STAGE) * 100}%`;
+        }
+
+        function updateComboDisplay() {
+            comboText.classList.remove('combo-flash');
+            void comboText.offsetWidth;
+            comboText.classList.add('combo-flash');
+        }
+
+        // ===== 道具函数 =====
+        function getDistractors(correct) {
+            const pool = mode === 'en2cn'
+                ? WORDS.map(w => w.cn).filter(v => v !== correct)
+                : WORDS.map(w => w.en).filter(v => v !== correct);
+            const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, 3);
+        }
+
+        // ===== 音频 =====
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function playSound(type) {
+            if (!audioCtx) audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'triangle';
+            if (type === 'correct') {
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(1175, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'stage_clear') {
+                oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.15);
+                oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.3);
+                oscillator.frequency.setValueAtTime(1047, audioCtx.currentTime + 0.45);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.7);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.7);
+            }
+        }
+
+        // ===== 彩带庆祝 =====
+        function confettiBurst() {
+            const colors = ['#ff6b6b', '#ffd700', '#4ecdc4', '#a29bfe', '#ff9a9e', '#84fab0'];
+            for (let i = 0; i < 50; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = (Math.random() * 0.5) + 's';
+                piece.style.width = piece.style.height = (Math.random() * 10 + 6) + 'px';
+                document.body.appendChild(piece);
+                setTimeout(() => piece.remove(), 3500);
+            }
+        }
+
+        // ===== 核心游戏 =====
+        let currentWord = null;  // 存储当前单词对象
+
+        function nextWord() {
+            if (timer) clearTimeout(timer);
+            questionLocked = false;
+
+            currentWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            mode = Math.random() < 0.5 ? 'en2cn' : 'cn2en';
+
+            if (mode === 'en2cn') {
+                questionEl.textContent = currentWord.en;
+                correctAnswer = currentWord.cn;
+                modeLabel.textContent = '请选出正确的单词意思';
+            } else {
+                questionEl.textContent = currentWord.cn;
+                correctAnswer = currentWord.en;
+                modeLabel.textContent = '请选出对应的英文单词';
+            }
+
+            const options = [correctAnswer, ...getDistractors(correctAnswer)];
+            options.sort(() => Math.random() - 0.5);
+
+            optionsEl.innerHTML = '';
+            options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn color${idx}`;
+                btn.textContent = opt;
+                btn.addEventListener('click', () => checkAnswer(btn, opt));
+                optionsEl.appendChild(btn);
+            });
+
+            statusEl.textContent = '加油！选一个答案吧';
+            statusEl.style.color = '#555';
+            updateUI();
+
+            // 自动播放当前单词发音
+            setTimeout(speakCurrentWord, 200);
+        }
+
+        function checkAnswer(btn, selected) {
+            if (questionLocked) return;
+            questionLocked = true;
+
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            stageQuestionCount++;
+
+            if (selected === correctAnswer) {
+                stageCorrectCount++;
+                const pointsEarned = BASE_POINTS + comboCount * COMBO_BONUS;
+                totalPoints += pointsEarned;
+                comboCount++;
+                if (comboCount > maxCombo) maxCombo = comboCount;
+
+                statusEl.innerHTML = `✅ 答对了！<b>+${pointsEarned}分</b>`;
+                statusEl.style.color = '#2ecc71';
+                btn.classList.add('correct-animation');
+                btn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                playSound('correct');
+                updateComboDisplay();
+
+                if (totalPoints >= 500) checkBadge('points_500');
+            } else {
+                comboCount = 0;
+                statusEl.innerHTML = `❌ 答错了，正确答案是：<b>${correctAnswer}</b>`;
+                statusEl.style.color = '#e74c3c';
+                btn.classList.add('wrong-animation');
+                btn.style.background = 'linear-gradient(135deg, #e74c3c, #c0392b)';
+                playSound('wrong');
+                allBtns.forEach(b => {
+                    if (b.textContent === correctAnswer) {
+                        b.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                        b.style.border = '3px solid white';
+                    }
+                });
+            }
+
+            // 播放正确答案发音（重点练习听力）
+            setTimeout(speakCorrectAnswer, 300);
+
+            updateUI();
+
+            if (stageQuestionCount >= QUESTIONS_PER_STAGE) {
+                setTimeout(showStageComplete, 1800);
+            } else {
+                timer = setTimeout(nextWord, 2500); // 留出时间听完发音
+            }
+        }
+
+        // ===== 通关结算 =====
+        function showStageComplete() {
+            playSound('stage_clear');
+            confettiBurst();
+
+            const accuracy = stageCorrectCount / QUESTIONS_PER_STAGE;
+            let stars = 0;
+            let bonusPoints = 0;
+            let stageComment = '';
+
+            if (accuracy === 1.0) {
+                stars = 3;
+                bonusPoints = 100;
+                stageComment = '🌟 完美过关！太棒了！';
+                checkBadge('perfect');
+            } else if (accuracy >= 0.8) {
+                stars = 2;
+                bonusPoints = 60;
+                stageComment = '✨ 非常不错！继续保持！';
+            } else if (accuracy >= 0.6) {
+                stars = 1;
+                bonusPoints = 30;
+                stageComment = '👍 过关成功！还能更好！';
+            } else {
+                stars = 0;
+                bonusPoints = 10;
+                stageComment = '💪 勉强过关，再试一次！';
+            }
+
+            totalPoints += bonusPoints;
+
+            starsRow.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const span = document.createElement('span');
+                span.textContent = '⭐';
+                if (i < stars) {
+                    span.classList.add('gained');
+                } else {
+                    span.style.opacity = '0.2';
+                }
+                starsRow.appendChild(span);
+            }
+
+            stageStats.innerHTML = `
+                <div><b>答对</b> ${stageCorrectCount} / ${QUESTIONS_PER_STAGE} 题</div>
+                <div>最高连击：<b>🔥 x${maxCombo}</b></div>
+                <div>通关奖励：<span class="bonus-text">+${bonusPoints} 分 🎁</span></div>
+                <div style="margin-top:8px; font-size:15px; color:#888;">${stageComment}</div>
+            `;
+
+            stageOverlay.classList.add('show');
+            updateUI();
+        }
+
+        // ===== 下一关 =====
+        function nextStage() {
+            stageOverlay.classList.remove('show');
+            currentStage++;
+            stageQuestionCount = 0;
+            stageCorrectCount = 0;
+            comboCount = 0;
+            maxCombo = 0;
+            updateUI();
+            nextWord();
+
+            if (currentStage >= 5) checkBadge('stage5');
+        }
+
+        // ===== 重新开始 =====
+        function restart() {
+            stageOverlay.classList.remove('show');
+            if (timer) clearTimeout(timer);
+            window.speechSynthesis.cancel();
+            currentStage = 1;
+            stageQuestionCount = 0;
+            stageCorrectCount = 0;
+            totalPoints = 0;
+            comboCount = 0;
+            maxCombo = 0;
+            unlockedBadges = {};
+            initBadges();
+            updateUI();
+            nextWord();
+        }
+
+        // ===== 漂浮背景 =====
+        function createFloatingElements() {
+            const bg = document.getElementById('floatBg');
+            const icons = ['⭐', '🌟', '🌸', '🍀', '🎈', '🦋', '🌈', '✨', '🎉'];
+            for (let i = 0; i < 15; i++) {
+                const span = document.createElement('span');
+                span.textContent = icons[Math.floor(Math.random() * icons.length)];
+                span.style.left = Math.random() * 100 + '%';
+                span.style.fontSize = (Math.random() * 30 + 20) + 'px';
+                span.style.animationDelay = (Math.random() * 5) + 's';
+                span.style.animationDuration = (Math.random() * 5 + 4) + 's';
+                bg.appendChild(span);
+            }
+        }
+
+        // ===== 启动 =====
+        restartBtn.addEventListener('click', restart);
+        nextStageBtn.addEventListener('click', nextStage);
+        speakBtn.addEventListener('click', () => {
+            if (!questionLocked && currentWord) speakCurrentWord();
+        });
+        createFloatingElements();
+        initBadges();
+        updateUI();
+        nextWord();
+    </script>
+</body>
+</html>
     <h2>请输入访问密码</h2>
     <input type="password" id="password-input" placeholder="输入密码">
     <br>
